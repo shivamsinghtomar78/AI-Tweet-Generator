@@ -1,19 +1,29 @@
-# Environment variables
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+myenv/
+ENV/
+env/
+*.egg-info/
+
+# Environment
 .env
-backend/.env
+.env.local
 
-# Dependencies
-node_modules/
-backend/myenv/
-backend/venv/
-
-# Build outputs
+# Frontend
+frontend/node_modules/
 frontend/build/
-frontend/dist/
+frontend/.env
 
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
 
 # OS
 .DS_Store
@@ -21,4 +31,3 @@ Thumbs.db
 
 # Logs
 *.log
-npm-debug.log*

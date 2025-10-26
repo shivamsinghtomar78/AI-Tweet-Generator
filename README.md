@@ -76,3 +76,19 @@ Required in `.env` file:
 - `GOOGLE_API_KEY`: Google Gemini API key
 - `OPENROUTER_API_KEY`: OpenRouter API key (optional)
 - `HUGGINGFACEHUB_API_TOKEN`: HuggingFace API token (optional)
+
+## Deployment
+
+### Deploy to Render (Single Service)
+
+This app is configured for one-click deployment on Render:
+
+1. Push code to GitHub
+2. Connect repository to Render
+3. Render auto-detects `render.yaml`
+4. Add `OPENROUTER_API_KEY` environment variable
+5. Deploy!
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions.
+
+**Live URL:** `https://your-app-name.onrender.com`

@@ -23,7 +23,7 @@ function App() {
     
     setLoading(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/generate-tweet', {
+      const response = await axios.post('/api/generate-tweet', {
         topic,
         tone,
         length,
@@ -34,16 +34,23 @@ function App() {
       if (response.data.success) {
         setResult(response.data);
         setSessionHistory(prev => [response.data, ...prev]);
+        setError(null);
       }
     } catch (error) {
       console.error('Error generating tweet:', error);
+      setError(error.response?.data?.error || 'Failed to generate tweet. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [error, setError] = useState(null);
+
   const copyTweet = (text) => {
     navigator.clipboard.writeText(text);
+    setCopySuccess(true);
+    setTimeout(() => setCopySuccess(false), 2000);
   };
 
   const clearHistory = () => {
@@ -168,6 +175,13 @@ function App() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             
+            {/* Error Display */}
+            {error && (
+              <div className="bg-red-900/20 border border-red-600 text-red-400 p-4 rounded-lg">
+                <strong>Error:</strong> {error}
+              </div>
+            )}
+            
             {/* Current Result */}
             {result && (
               <Card>
@@ -195,7 +209,7 @@ function App() {
 
                   <Button onClick={() => copyTweet(result.tweet)} variant="outline">
                     <Copy className="h-4 w-4 mr-2" />
-                    Copy Tweet
+                    {copySuccess ? '✓ Copied!' : 'Copy Tweet'}
                   </Button>
                 </CardContent>
               </Card>

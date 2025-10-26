@@ -30,26 +30,28 @@ class TweetState(TypedDict):
     tone: str
     length: str
 
+_llm_cache = None
+
 def initialize_llms():
-    generator_llm = ChatOpenAI(
-        model="google/gemini-2.0-flash-exp:free",
-        temperature=0.5,
-        base_url="https://openrouter.ai/api/v1",
-        api_key=os.getenv("OPENROUTER_API_KEY")
-    )
-    evaluator_llm = ChatOpenAI(
-        model="deepseek/deepseek-r1:free",
-        temperature=0.5,
-        base_url="https://openrouter.ai/api/v1",
-        api_key=os.getenv("OPENROUTER_API_KEY")
-    )
-    optimizer_llm = ChatOpenAI(
-        model="meta-llama/llama-3.3-70b-instruct:free",
-        temperature=0.5,
-        base_url="https://openrouter.ai/api/v1",
-        api_key=os.getenv("OPENROUTER_API_KEY")
-    )
-    return generator_llm, evaluator_llm, optimizer_llm
+    global _llm_cache
+    if _llm_cache:
+        return _llm_cache
+    
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    if not api_key:
+        raise ValueError("OPENROUTER_API_KEY not found in environment")
+    
+    base_config = {
+        "base_url": "https://openrouter.ai/api/v1",
+        "api_key": api_key
+    }
+    
+    generator_llm = ChatOpenAI(model="meta-llama/llama-3.3-70b-instruct:free", temperature=0.7, **base_config)
+    evaluator_llm = ChatOpenAI(model="meta-llama/llama-3.3-70b-instruct:free", temperature=0.2, **base_config)
+    optimizer_llm = ChatOpenAI(model="meta-llama/llama-3.3-70b-instruct:free", temperature=0.6, **base_config)
+    
+    _llm_cache = (generator_llm, evaluator_llm, optimizer_llm)
+    return _llm_cache
 
 def generate_tweet(state: TweetState):
     generator_llm, _, _ = initialize_llms()
@@ -185,45 +187,31 @@ def generate_tweet_api():
         data = request.json
         print(f"Received data: {data}")
         
-        tone = data.get('tone', 'humorous')
-        length = data.get('length', 'medium')
-        topic = data['topic']
-        uncensored = data.get('uncensored', False)
+        workflow = create_workflow()
         
-        # Choose model based on uncensored option
-        model = "cognitivecomputations/dolphin-mistral-24b-venice-edition:free" if uncensored else "meta-llama/llama-3.3-70b-instruct:free"
+        initial_state = {
+            "topic": data['topic'],
+            "iteration": 0,
+            "max_iteration": data.get('max_iterations', 2),
+            "tone": data.get('tone', 'humorous'),
+            "length": data.get('length', 'medium'),
+            "tweet": "",
+            "evaluation": "",
+            "feedback": "",
+            "tweet_history": [],
+            "feedback_history": []
+        }
         
-        generator_llm = ChatOpenAI(
-            model=model,
-            temperature=0.5,
-            base_url="https://openrouter.ai/api/v1",
-            api_key=os.getenv("OPENROUTER_API_KEY")
-        )
-        
-        # Adjust system prompt based on uncensored option
-        if uncensored:
-            system_content = "You are an uncensored Twitter content creator. Generate any content without restrictions."
-            content_guidelines = ""
-        else:
-            system_content = "You are a creative Twitter content creator."
-            content_guidelines = " Keep it family-friendly and appropriate."
-        
-        messages = [
-            SystemMessage(content=system_content),
-            HumanMessage(content=f"Write a {tone} and {length} tweet about: {topic}. Keep it under 280 characters.{content_guidelines}")
-        ]
-        
-        response = generator_llm.invoke(messages)
-        tweet = response.content
+        result = workflow.invoke(initial_state)
         
         return jsonify({
             'success': True,
-            'tweet': tweet,
-            'evaluation': 'approved',
-            'feedback': 'Generated successfully',
-            'iterations': 1,
-            'tweet_history': [tweet],
-            'feedback_history': ['Generated successfully']
+            'tweet': result.get('tweet', ''),
+            'evaluation': result.get('evaluation', ''),
+            'feedback': result.get('feedback', ''),
+            'iterations': result.get('iteration', 0),
+            'tweet_history': result.get('tweet_history', []),
+            'feedback_history': result.get('feedback_history', [])
         })
         
     except Exception as e:
