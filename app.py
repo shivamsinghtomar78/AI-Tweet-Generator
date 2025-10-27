@@ -181,11 +181,27 @@ def create_workflow():
     
     return graph.compile()
 
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    return jsonify({
+        'status': 'ok',
+        'api_key_configured': bool(api_key)
+    })
+
 @app.route('/api/generate-tweet', methods=['POST'])
 def generate_tweet_api():
     try:
         data = request.json
+        if not data or 'topic' not in data:
+            return jsonify({'success': False, 'error': 'Topic is required'}), 400
+        
         print(f"Received data: {data}")
+        
+        # Test API key
+        api_key = os.getenv("OPENROUTER_API_KEY")
+        if not api_key:
+            return jsonify({'success': False, 'error': 'OPENROUTER_API_KEY not configured'}), 500
         
         workflow = create_workflow()
         
@@ -215,10 +231,11 @@ def generate_tweet_api():
         })
         
     except Exception as e:
-        print(f"Error: {str(e)}")
+        error_msg = str(e)
+        print(f"Error: {error_msg}")
         import traceback
         traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': error_msg}), 500
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
@@ -228,4 +245,5 @@ def serve(path):
     return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)

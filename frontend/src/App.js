@@ -5,7 +5,8 @@ import { Card, CardHeader, CardTitle, CardContent } from './components/ui/card';
 import { Input } from './components/ui/input';
 import { Select } from './components/ui/select';
 import { Slider } from './components/ui/slider';
-import { Twitter, Settings, History, MessageSquare, Copy, Trash2 } from 'lucide-react';
+import { LoadingSkeleton } from './components/LoadingSkeleton';
+import { Twitter, Settings, History, MessageSquare, Copy, Trash2, Sparkles } from 'lucide-react';
 import './index.css';
 
 function App() {
@@ -16,29 +17,29 @@ function App() {
   const [uncensored, setUncensored] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
-  const [sessionHistory, setSessionHistory] = useState([]);
 
   const generateTweet = async () => {
     if (!topic.trim()) return;
     
     setLoading(true);
+    setError(null);
     try {
       const response = await axios.post('/api/generate-tweet', {
         topic,
         tone,
         length,
-        max_iterations: maxIterations,
-        uncensored
+        max_iterations: maxIterations
       });
       
       if (response.data.success) {
         setResult(response.data);
-        setSessionHistory(prev => [response.data, ...prev]);
-        setError(null);
+      } else {
+        setError(response.data.error || 'Unknown error occurred');
       }
     } catch (error) {
       console.error('Error generating tweet:', error);
-      setError(error.response?.data?.error || 'Failed to generate tweet. Please try again.');
+      console.error('Error response:', error.response);
+      setError(error.response?.data?.error || error.message || 'Failed to generate tweet. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -54,7 +55,6 @@ function App() {
   };
 
   const clearHistory = () => {
-    setSessionHistory([]);
     setResult(null);
   };
 
@@ -70,13 +70,14 @@ function App() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <div className="bg-gradient-to-b from-card to-background border-b border-border">
-        <div className="container mx-auto px-4 py-8 text-center">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Twitter className="h-8 w-8 text-primary" />
-            <h1 className="text-4xl font-bold text-primary">AI Tweet Generator</h1>
+      <div className="bg-gradient-to-b from-card to-background border-b border-border relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-primary/10 animate-pulse-slow"></div>
+        <div className="container mx-auto px-4 py-8 text-center relative z-10">
+          <div className="flex items-center justify-center gap-3 mb-4 animate-fade-in">
+            <Twitter className="h-8 w-8 text-primary animate-pulse" />
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">AI Tweet Generator</h1>
           </div>
-          <p className="text-muted-foreground text-lg">Craft viral-worthy tweets with AI-powered optimization</p>
+          <p className="text-muted-foreground text-lg animate-slide-up">Craft viral-worthy tweets with AI-powered optimization</p>
         </div>
       </div>
 
@@ -84,8 +85,8 @@ function App() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <Card>
+          <div className="lg:col-span-1 animate-slide-up">
+            <Card className="sticky top-4">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="h-5 w-5" />
@@ -94,11 +95,15 @@ function App() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Tweet Topic *</label>
+                  <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    Tweet Topic *
+                  </label>
                   <Input
                     placeholder="Enter a fun topic..."
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && !loading && topic.trim() && generateTweet()}
                   />
                 </div>
 
@@ -145,19 +150,29 @@ function App() {
                   <p className="text-xs text-muted-foreground mt-1">Remove content restrictions</p>
                 </div>
 
-                <div className="bg-muted p-4 rounded-lg">
+                <div className="bg-gradient-to-r from-primary/10 to-blue-500/10 p-4 rounded-lg border border-primary/20">
                   <p className="text-sm text-muted-foreground">
-                    <strong>💡 Tip:</strong> Keep topics engaging and positive for best results.
+                    <strong className="text-primary">💡 Tip:</strong> Keep topics engaging and positive for best results.
                   </p>
                 </div>
 
                 <Button 
                   onClick={generateTweet} 
                   disabled={!topic.trim() || loading}
-                  className="w-full"
+                  className="w-full relative overflow-hidden group"
                   size="lg"
                 >
-                  {loading ? 'Generating...' : '🚀 Generate Tweet'}
+                  {loading && (
+                    <span className="absolute inset-0 loading-shimmer"></span>
+                  )}
+                  <span className="relative z-10">
+                    {loading ? (
+                      <span className="flex items-center gap-2">
+                        <span className="inline-block h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        Generating...
+                      </span>
+                    ) : '🚀 Generate Tweet'}
+                  </span>
                 </Button>
 
                 <Button 
@@ -177,38 +192,41 @@ function App() {
             
             {/* Error Display */}
             {error && (
-              <div className="bg-red-900/20 border border-red-600 text-red-400 p-4 rounded-lg">
+              <div className="bg-red-900/20 border border-red-600 text-red-400 p-4 rounded-lg animate-scale-in">
                 <strong>Error:</strong> {error}
               </div>
             )}
             
+            {/* Loading State */}
+            {loading && <LoadingSkeleton />}
+            
             {/* Current Result */}
-            {result && (
-              <Card>
+            {!loading && result && (
+              <Card className="animate-scale-in">
                 <CardHeader>
                   <CardTitle>🎯 Generated Tweet</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="mb-4">
-                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusBadge(result.evaluation)}`}>
+                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium transition-all duration-300 ${getStatusBadge(result.evaluation)}`}>
                       {result.evaluation === 'approved' ? '✅ Approved' : 
                        result.evaluation === 'needs_improvement' ? '⚠️ Needs Improvement' : 
                        '🚫 Rejected'}
                     </span>
                   </div>
 
-                  <div className="bg-muted p-4 rounded-lg mb-4">
+                  <div className="bg-muted p-4 rounded-lg mb-4 border border-primary/20 hover:border-primary/40 transition-all duration-300">
                     <p className="text-lg leading-relaxed">{result.tweet}</p>
-                    <div className="mt-3 text-sm text-muted-foreground">
-                      Characters: {result.tweet.length}/280 | 
-                      Iterations: {result.iterations} | 
-                      Tone: {tone} | 
-                      Length: {length}
+                    <div className="mt-3 flex flex-wrap gap-2 text-sm text-muted-foreground">
+                      <span className="px-2 py-1 bg-background rounded">📝 {result.tweet.length}/280</span>
+                      <span className="px-2 py-1 bg-background rounded">🔄 {result.iterations} iterations</span>
+                      <span className="px-2 py-1 bg-background rounded">🎭 {tone}</span>
+                      <span className="px-2 py-1 bg-background rounded">📏 {length}</span>
                     </div>
                   </div>
 
-                  <Button onClick={() => copyTweet(result.tweet)} variant="outline">
-                    <Copy className="h-4 w-4 mr-2" />
+                  <Button onClick={() => copyTweet(result.tweet)} variant="outline" className="group">
+                    <Copy className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
                     {copySuccess ? '✓ Copied!' : 'Copy Tweet'}
                   </Button>
                 </CardContent>
@@ -217,7 +235,7 @@ function App() {
 
             {/* Tweet History */}
             {result && result.tweet_history && result.tweet_history.length > 0 && (
-              <Card>
+              <Card className="animate-slide-up" style={{animationDelay: '0.1s'}}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <History className="h-5 w-5" />
@@ -227,11 +245,14 @@ function App() {
                 <CardContent>
                   <div className="space-y-3">
                     {result.tweet_history.map((tweet, index) => (
-                      <div key={index} className="bg-muted p-3 rounded-lg">
-                        <div className="font-medium text-primary mb-2">Iteration {index + 1}</div>
+                      <div key={index} className="bg-muted p-3 rounded-lg border border-transparent hover:border-primary/30 transition-all duration-300 transform hover:scale-[1.02]">
+                        <div className="font-medium text-primary mb-2 flex items-center gap-2">
+                          <span className="inline-block w-6 h-6 rounded-full bg-primary/20 text-center text-xs leading-6">{index + 1}</span>
+                          Iteration {index + 1}
+                        </div>
                         <p className="text-sm">{tweet}</p>
                         <div className="text-xs text-muted-foreground mt-1">
-                          {tweet.length} characters
+                          📝 {tweet.length} characters
                         </div>
                       </div>
                     ))}
@@ -242,7 +263,7 @@ function App() {
 
             {/* Feedback History */}
             {result && result.feedback_history && result.feedback_history.length > 0 && (
-              <Card>
+              <Card className="animate-slide-up" style={{animationDelay: '0.2s'}}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <MessageSquare className="h-5 w-5" />
@@ -252,8 +273,11 @@ function App() {
                 <CardContent>
                   <div className="space-y-3">
                     {result.feedback_history.map((feedback, index) => (
-                      <div key={index} className="bg-muted p-3 rounded-lg">
-                        <div className="font-medium text-primary mb-2">Feedback {index + 1}</div>
+                      <div key={index} className="bg-muted p-3 rounded-lg border border-transparent hover:border-primary/30 transition-all duration-300">
+                        <div className="font-medium text-primary mb-2 flex items-center gap-2">
+                          <MessageSquare className="h-4 w-4" />
+                          Feedback {index + 1}
+                        </div>
                         <p className="text-sm leading-relaxed">{feedback}</p>
                       </div>
                     ))}
@@ -266,9 +290,9 @@ function App() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-border mt-12">
+      <footer className="border-t border-border mt-12 bg-gradient-to-t from-card to-transparent">
         <div className="container mx-auto px-4 py-6 text-center text-muted-foreground">
-          <p>Built with ❤️ using Flask, React, and LangGraph | Create engaging content! 🌟</p>
+          <p className="animate-fade-in">Built with ❤️ using Flask, React, and LangGraph | Create engaging content! 🌟</p>
         </div>
       </footer>
     </div>
