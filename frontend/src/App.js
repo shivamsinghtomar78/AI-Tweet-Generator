@@ -28,7 +28,8 @@ function App() {
         topic,
         tone,
         length,
-        max_iterations: maxIterations
+        max_iterations: maxIterations,
+        uncensored
       });
       
       if (response.data.success) {
@@ -137,17 +138,17 @@ function App() {
                   />
                 </div>
 
-                <div>
-                  <label className="flex items-center space-x-2">
+                <div className="bg-yellow-900/20 border border-yellow-600/50 p-3 rounded-lg">
+                  <label className="flex items-center space-x-2 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={uncensored}
                       onChange={(e) => setUncensored(e.target.checked)}
-                      className="rounded"
+                      className="rounded cursor-pointer"
                     />
                     <span className="text-sm font-medium">🔓 Uncensored Mode</span>
                   </label>
-                  <p className="text-xs text-muted-foreground mt-1">Remove content restrictions</p>
+                  <p className="text-xs text-muted-foreground mt-1">Removes content safety filters</p>
                 </div>
 
                 <div className="bg-gradient-to-r from-primary/10 to-blue-500/10 p-4 rounded-lg border border-primary/20">
