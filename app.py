@@ -240,9 +240,25 @@ def generate_tweet_api():
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
-    if path and os.path.exists(os.path.join(app.static_folder, path)):
-        return send_from_directory(app.static_folder, path)
-    return send_from_directory(app.static_folder, 'index.html')
+    if path.startswith('api/'):
+        return jsonify({'error': 'Not found'}), 404
+    
+    if app.static_folder and os.path.exists(app.static_folder):
+        if path and os.path.exists(os.path.join(app.static_folder, path)):
+            return send_from_directory(app.static_folder, path)
+        index_path = os.path.join(app.static_folder, 'index.html')
+        if os.path.exists(index_path):
+            return send_from_directory(app.static_folder, 'index.html')
+    
+    return jsonify({
+        'message': 'AI Tweet Generator API',
+        'status': 'running',
+        'endpoints': {
+            'health': '/api/health',
+            'generate': '/api/generate-tweet'
+        },
+        'note': 'Frontend build not found. Run: cd frontend && npm run build'
+    }), 200
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

@@ -13,13 +13,14 @@ env/
 # Redundant folders
 backend/
 
+# Note: frontend/build/ is NOT ignored - needed for deployment
+
 # Environment
 .env
 .env.local
 
 # Frontend
 frontend/node_modules/
-frontend/build/
 frontend/.env
 
 # IDE
