@@ -138,7 +138,7 @@ function App() {
                   />
                 </div>
 
-                <div className="bg-yellow-900/20 border border-yellow-600/50 p-3 rounded-lg">
+                <div className={`p-3 rounded-lg transition-all duration-300 ${uncensored ? 'bg-yellow-900/30 border-2 border-yellow-500' : 'bg-yellow-900/20 border border-yellow-600/50'}`}>
                   <label className="flex items-center space-x-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -148,7 +148,9 @@ function App() {
                     />
                     <span className="text-sm font-medium">🔓 Uncensored Mode</span>
                   </label>
-                  <p className="text-xs text-muted-foreground mt-1">Removes content safety filters</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {uncensored ? '⚡ Using Dolphin Mistral (Unrestricted)' : 'Uses Llama 3.3 (Family-friendly)'}
+                  </p>
                 </div>
 
                 <div className="bg-gradient-to-r from-primary/10 to-blue-500/10 p-4 rounded-lg border border-primary/20">
